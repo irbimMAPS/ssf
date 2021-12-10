@@ -1,18 +1,24 @@
 source("R/ssf_functions.R")
 
-
 input_dir = "data"
 out_dir = "results"
-
-# load data ####
-vessel_dat = read.csv(file.path(input_dir, "gps_data.csv")) %>%
-  mutate(deviceTime = as.POSIXct(deviceTime))
 
 # harbour location ####
 harb = c(13.503044, 43.616199)
 harb_pp = st_point(x = harb)
 harb_buff = st_buffer(harb_pp, 1/60*0.25)
 
+# geofence polygon ###
+geofence_poly_str = data.frame(name = "Ancona", 
+                               geometry = "POLYGON((13.504753065744099 43.610748955110495, 13.476144452350454 43.6236429604059, 13.490869473950122 43.63897003003305, 13.512606410597256 43.62262778468241, 13.504753065744099 43.610748955110495))")
+geofence_poly = st_as_sf(geofence_poly_str, wkt = "geometry")
+st_crs(geofence_poly) = wgs
+
+# load data ####
+vessel_dat = read.csv(file.path(input_dir, "gps_data.csv")) %>%
+  mutate(deviceTime = as.POSIXct(deviceTime))
+
+# define period ###
 from = min(as.Date(vessel_dat$deviceTime))
 to = max(as.Date(vessel_dat$deviceTime))
 
@@ -28,19 +34,17 @@ write.csv(vessel_trips_table, file.path(out_dir, "vessel_trips_table.csv"), row.
 # assign position to session ####
 vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table)
 
-#### plots ####
+# plot trip & sensor ####
 # define spatial extension e download the map 
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
 bb = c(xrange[1]-0.01, yrange[1]-0.01, xrange[2]+0.01, yrange[2]+0.01)
 map = get_map(bb, source = "osm")
-
 # arrange input dataset
 xdat = vessel_dat %>%
   mutate(trip = as.factor(trip),
          date = paste(min(deviceTime), max(deviceTime), sep = "-"))
 
-# plot trip & sensor ####
 p2 = ggmap(map) +
   geom_point(data = xdat %>%
                filter(di2 == 1), 
