@@ -32,14 +32,15 @@ vessel_trips_table = fishing_trips_table(vessel_dat) %>%
 write.csv(vessel_trips_table, file.path(out_dir, "vessel_trips_table.csv"), row.names = F)
 
 # assign position to session ####
-vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table)
+vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
+  filter(trip != 0)
 
 # plot trip & sensor ####
 # define spatial extension e download the map 
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
 bb = c(xrange[1]-0.01, yrange[1]-0.01, xrange[2]+0.01, yrange[2]+0.01)
-map = get_map(bb, source = "osm")
+map = get_map(bb, source = "osm", zoom = 14)
 # arrange input dataset
 xdat = vessel_dat %>%
   mutate(trip = as.factor(trip),
