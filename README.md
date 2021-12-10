@@ -1,2 +1,2 @@
-# ssf
-Tracking system and IO devices for small scale fishery
+# Workflow adopted in "Addressing gaps in small-scale fisheries: a low-cost tracking architecture"
+
