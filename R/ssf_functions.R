@@ -30,6 +30,7 @@ wgs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 
 sf::sf_use_s2(FALSE)
 options(scipen = 10000)
+Sys.setlocale("LC_TIME", "en_US")
 
 st_fun = function(x) (x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))
 

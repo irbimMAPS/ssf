@@ -40,23 +40,7 @@ xdat = vessel_dat %>%
   mutate(trip = as.factor(trip),
          date = paste(min(deviceTime), max(deviceTime), sep = "-"))
 
-# plot all session 
-p1 = ggmap(map) +
-  geom_point(data = xdat, 
-             aes(longitude, latitude), size = 0.4, show.legend = F) +
-  theme_bw() +
-  theme(legend.position = "bottom") + 
-  facet_wrap(~trip, ncol = 6) + xlab("") + ylab("") + 
-  scale_color_manual(values = cols) +
-  ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
-p1
-ggsave(file.path(out_dir, "all_session_map.pdf"), p1, device = cairo_pdf, width = 16, height = 10)
-knitr::plot_crop(file.path(out_dir, "all_session_map.pdf"), quiet = TRUE)
-bitmap <- pdftools::pdf_render_page(file.path(out_dir, "all_session_map.pdf"), dpi = 600)
-png::writePNG(bitmap, file.path(out_dir, "all_session_map.png"))
-rm(bitmap); rm(p1); gc()
-
-# plot sensor ####
+# plot trip & sensor ####
 p2 = ggmap(map) +
   geom_point(data = xdat %>%
                filter(di2 == 1), 
@@ -70,15 +54,15 @@ p2 = ggmap(map) +
   # scale_color_manual(values = cols) +
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
-ggsave(file.path(out_dir, "all_session_sensor.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
-knitr::plot_crop(file.path(out_dir, "all_session_sensor.pdf"), quiet = TRUE)
-bitmap <- pdftools::pdf_render_page(file.path(out_dir, "all_session_sensor.pdf"), dpi = 600)
-png::writePNG(bitmap, file.path(out_dir, "all_session_sensor.png"))
+ggsave(file.path(out_dir, "trips_sensor.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
+knitr::plot_crop(file.path(out_dir, "trips_sensor.pdf"), quiet = TRUE)
+bitmap <- pdftools::pdf_render_page(file.path(out_dir, "trips_sensor.pdf"), dpi = 600)
+png::writePNG(bitmap, file.path(out_dir, "trips_sensor.png"))
 rm(bitmap); rm(p2); gc()
 
 
 # session stats ####
-trips_table = read.csv(file.path(out_dir, "vessel_trips_table.csv"), detectDates = T)
+trips_table = read.csv(file.path(out_dir, "vessel_trips_table.csv"))
 track_stats = data.frame(xdat %>%
                            group_by(trip) %>%
                            dplyr:::summarise(duration_hrs = round(as.numeric(difftime(max(deviceTime), min(deviceTime)), units = "hours"),2),
