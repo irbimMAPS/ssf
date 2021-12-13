@@ -35,12 +35,45 @@ write.csv(vessel_trips_table, file.path(out_dir, "vessel_trips_table.csv"), row.
 vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
   filter(trip != 0)
 
-# plot trip & sensor ####
+# check geofence event ####
+check_geofence = vessel_dat %>% 
+  group_by(trip) %>%
+  dplyr:::summarise(enter = length(which(type == "geofenceEnter")),
+                    exit = length(which(type == "geofenceExit")))
+
+# daily density of the data ####
+day_hours_ref = data.frame(day_hours = 0:23)
+day_hours = hours(vessel_dat$deviceTime[-which(vessel_dat$di2 == 0)])
+day_hours_freq = data.frame(table(day_hours)) %>%
+  mutate(day_hours = as.numeric(as.character(day_hours))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours) %>%
+  mutate(source = "raw")
+
+day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$di2 == 0)])
+day_hours_sensor_freq = data.frame(table(day_hours_sensor)) %>%
+  mutate(day_hours = as.numeric(as.character(day_hours_sensor))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours) %>%
+  select(-day_hours_sensor) %>%
+  mutate(source = "sensor")
+
+day_hours_dat = rbind(day_hours_freq, day_hours_sensor_freq)
+
+ggplot() + 
+  geom_bar(data = day_hours_dat, aes(day_hours, Freq, fill = source), stat = "identity") +
+  coord_polar()
+  
+
+# trip & sensor ####
 # define spatial extension e download the map 
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
 bb = c(xrange[1]-0.01, yrange[1]-0.01, xrange[2]+0.01, yrange[2]+0.01)
 map = get_map(bb, source = "osm", zoom = 12)
+
 # arrange input dataset
 xdat = vessel_dat %>%
   filter(trip != 0) %>%
@@ -52,6 +85,7 @@ xdat_trip = xdat %>% group_by(trip) %>%
 xdat = xdat %>%
   inner_join(xdat_trip)
 
+# plot
 p2 = ggmap(map) +
   geom_point(data = xdat %>%
                filter(di2 == 1), 
@@ -60,10 +94,8 @@ p2 = ggmap(map) +
                filter(di2 == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
-  theme(legend.position = "bottom",
-        strip.text = element_text(size=7)) + 
-  facet_wrap(~date, ncol = 6) + xlab("") + ylab("") + 
-  # scale_color_manual(values = cols) +
+  theme(legend.position = "bottom") + 
+  facet_wrap(~trip, ncol = 6) + xlab("") + ylab("") + 
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
 ggsave(file.path(out_dir, "trips_sensor.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
@@ -78,6 +110,7 @@ trips_table = read.csv(file.path(out_dir, "vessel_trips_table.csv"))
 track_stats = data.frame(xdat %>%
                            group_by(trip) %>%
                            dplyr:::summarise(duration_hrs = round(as.numeric(difftime(max(deviceTime), min(deviceTime)), units = "hours"),2),
+                                             ndays = length(unique(as.Date(deviceTime))),
                                              speed_kmh_avg = round(mean(speed),2),
                                              distance_km = round((max(totalDistance) - min(totalDistance))/1000,2),
                                              sensor_hrs = round(length(which(di2 == 0))/60, 2),
@@ -91,6 +124,7 @@ trips_table_stat = trips_table %>%
                mutate(trip = as.numeric(as.character(trip))), by = c("trip")) %>%
   mutate(deviceId = 1)
 write.csv(trips_table_stat, file.path(out_dir, "vessel_table_trips_stats.csv"), row.names = F)
+
 
 
 

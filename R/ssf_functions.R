@@ -154,7 +154,7 @@ fishing_trips_table <- function(vessel_data){
     if(xdat$speed[i] > 0 & xdat$sat[i] > 1){
       movement[i] = 1
     }
-    if(diff_time >= 0.45){
+    if(diff_time >= 0.75){
       stop[i-1] = max(start)
       start[i] = max(start)+1
     }else{
