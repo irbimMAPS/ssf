@@ -21,9 +21,6 @@ library(lwgeom)
 library(data.table)
 library(ggpubr)
 
-# Sys.setenv(RETICULATE_PYTHON = "python/bin/python")
-# reticulate::py_config()
-
 wgs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 
 "%ni%"=Negate('%in%')
@@ -42,7 +39,7 @@ formatting_string <- function(x){
   return(xx)
 }
 
-# check rate ####
+# check quality ####
 check_data_raw <- function(vessel_data, rate_mins = 1, gaps_mins = 30){
   
   xpp = st_as_sf(vessel_data, coords = c("longitude", "latitude"))
@@ -99,19 +96,6 @@ check_data_raw <- function(vessel_data, rate_mins = 1, gaps_mins = 30){
   return(vessel_data_quality)
 }
 
-# check positions ####
-check_pp_onland <- function(vessel_data, land){
-  xpp = st_as_sf(vessel_data, coords = c("longitude", "latitude"))
-  st_crs(xpp) = wgs
-  onland = as.numeric(st_intersects(xpp, land, sparse = T))
-  if(length(which(is.na(onland) == T)) == length(onland)){
-    
-  }else{
-    
-  }
-}
-
-
 # define in harbour position - require an harbour location ####
 pp_harb = function(vessel_data, location){
   xpp = st_as_sf(vessel_data, coords = c("longitude", "latitude")) 
@@ -126,7 +110,7 @@ pp_harb = function(vessel_data, location){
   return(vessel_data)
 }
 
-# defne fishing trips timetable using the event (geofunc) #####
+# define fishing trips timetable using the event (geofence) #####
 fishing_trips_table <- function(vessel_data){
   
   xdat = vessel_data %>%
