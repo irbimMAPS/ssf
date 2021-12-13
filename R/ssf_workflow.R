@@ -40,11 +40,17 @@ vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
 bb = c(xrange[1]-0.01, yrange[1]-0.01, xrange[2]+0.01, yrange[2]+0.01)
-map = get_map(bb, source = "osm", zoom = 14)
+map = get_map(bb, source = "osm", zoom = 12)
 # arrange input dataset
 xdat = vessel_dat %>%
-  mutate(trip = as.factor(trip),
-         date = paste(min(deviceTime), max(deviceTime), sep = "-"))
+  filter(trip != 0) %>%
+  mutate(trip = as.factor(trip)) 
+
+xdat_trip = xdat %>% group_by(trip) %>%
+  dplyr:::summarise(date = paste(min(deviceTime), max(deviceTime), sep = " - "))
+
+xdat = xdat %>%
+  inner_join(xdat_trip)
 
 p2 = ggmap(map) +
   geom_point(data = xdat %>%
@@ -54,8 +60,9 @@ p2 = ggmap(map) +
                filter(di2 == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
-  theme(legend.position = "bottom") + 
-  facet_wrap(~trip, ncol = 6) + xlab("") + ylab("") + 
+  theme(legend.position = "bottom",
+        strip.text = element_text(size=7)) + 
+  facet_wrap(~date, ncol = 6) + xlab("") + ylab("") + 
   # scale_color_manual(values = cols) +
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
