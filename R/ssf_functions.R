@@ -127,9 +127,6 @@ pp_harb = function(vessel_data, location){
 }
 
 # defne fishing trips timetable using the event (geofunc) #####
-# select all events associate to sattelites detection, start (0 satellite) and stop (n satellite), ignition and motion - events named 239 and 240
-# clean starts, there are false start
-# select ping using the timestamp from a start to relative stop, starting from the first start
 fishing_trips_table <- function(vessel_data){
   
   xdat = vessel_data %>%
