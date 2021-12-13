@@ -35,7 +35,44 @@ write.csv(vessel_trips_table, file.path(out_dir, "vessel_trips_table.csv"), row.
 vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
   filter(trip != 0)
 
-# plot trip & sensor ####
+# hours density ####
+day_hours_ref = data.frame(day_hours = 0:23)
+# hours density sensor off
+day_hours_raw = hours(vessel_dat$deviceTime[-which(vessel_dat$di2 == 0)])
+day_hours_raw = data.frame(table(day_hours_raw)) %>%
+  dplyr:::rename("day_hours" = "day_hours_raw")  %>%
+  mutate(day_hours = as.numeric(as.character(day_hours))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours)%>%
+  mutate(sensor = "off")
+# hours density sensor on
+day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$di2 == 0)])
+day_hours_sensor = data.frame(table(day_hours_sensor)) %>%
+  dplyr:::rename("day_hours" = "day_hours_sensor")  %>%
+  mutate(day_hours = as.numeric(as.character(day_hours))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours)%>%
+  mutate(sensor = "on")
+#combine
+day_hours_sensor_raw = rbind(day_hours_raw,
+                             day_hours_sensor) %>%
+  mutate(sensor = as.factor(sensor))
+# plot
+p1 = ggplot() +
+  geom_bar(data = day_hours_sensor_raw, aes(as.factor(day_hours), Freq, fill = sensor), stat = "identity") +
+  theme_bw() +
+  ylab("Minutes") + xlab("Time of the day") +
+  theme(legend.position = "bottom")
+p1
+ggsave(file.path(out_dir, "hours_density.pdf"), p1, device = cairo_pdf, width = 10.5, height = 10)
+knitr::plot_crop(file.path(out_dir, "hours_density.pdf"), quiet = TRUE)
+bitmap <- pdftools::pdf_render_page(file.path(out_dir, "hours_density.pdf"), dpi = 600)
+png::writePNG(bitmap, file.path(out_dir, "hours_density.pdf"))
+rm(bitmap); rm(p1); gc()
+
+# trip & sensor ####
 # define spatial extension e download the map 
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
@@ -60,9 +97,8 @@ p2 = ggmap(map) +
                filter(di2 == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
-  theme(legend.position = "bottom",
-        strip.text = element_text(size=7)) + 
-  facet_wrap(~date, ncol = 6) + xlab("") + ylab("") + 
+  theme(legend.position = "bottom") + 
+  facet_wrap(~trip, ncol = 6) + xlab("") + ylab("") + 
   # scale_color_manual(values = cols) +
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
