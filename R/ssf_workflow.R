@@ -16,7 +16,7 @@ geofence_poly = st_as_sf(geofence_poly_str, wkt = "geometry")
 st_crs(geofence_poly) = wgs
 
 # load data ####
-vessel_dat = read.csv(file.path(input_dir, "gps_data.csv"))[,-1] %>%
+vessel_dat = read.csv(file.path(input_dir, "gps_data.csv")) %>%
   mutate(deviceTime = as.POSIXct(deviceTime))
 
 # define period ###
@@ -37,7 +37,8 @@ vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
   filter(trip != 0)
 
 # assign in harbour position ####
-vessel_dat = pp_harb(vessel_dat, harb_buff)
+vessel_dat = pp_harb(vessel_dat, harb_buff) %>%
+  dplyr:::select(-in_harb_stop)
 
 # estimate navigation speed
 navigation_speed = as.numeric(quantile(vessel_dat$speed, 0.75))
@@ -74,7 +75,17 @@ p1 = ggplot() +
   ylab("Minutes") + xlab("Time of the day") +
   theme(legend.position = "bottom")
 p1
-ggsave(file.path(out_dir, "hours_density.pdf"), p1, device = cairo_pdf)
+p1.2 = ggplot() +
+  geom_violin(data = vessel_dat %>% 
+                 filter(vessel_dat$speed <= navigation_speed & in_harb == 0) %>%
+                mutate(di2 = ifelse(di2 == 1, "off", "on")), aes(x = as.factor(di2), y = speed, fill = as.factor(di2)), show.legend = F) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank()) + xlab("")
+
+p1combo = ggpubr:::ggarrange(plotlist = list(p1, p1.2), align = "hv", common.legend = T, legend = "bottom", labels = c("a", "b"))
+
+ggsave(file.path(out_dir, "hours_density.pdf"), p1combo, device = cairo_pdf)
 knitr::plot_crop(file.path(out_dir, "hours_density.pdf"), quiet = TRUE)
 bitmap <- pdftools::pdf_render_page(file.path(out_dir, "hours_density.pdf"), dpi = 600)
 png::writePNG(bitmap, file.path(out_dir, "hours_density.png"))
@@ -135,6 +146,8 @@ trips_table_stat = trips_table %>%
   mutate(deviceId = 1)
 write.csv(trips_table_stat, file.path(out_dir, "vessel_table_trips_stats.csv"), row.names = F)
 
+# working days ####
+length(unique(c(as.Date(trips_table_stat$trip_start), as.Date(trips_table_stat$trip_end))))
 
 # spatial analysis
 sensor_dat = vessel_dat %>%
