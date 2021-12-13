@@ -3,6 +3,7 @@ source("R/ssf_functions.R")
 input_dir = "data"
 out_dir = "results"
 
+##### Processing ######
 # harbour location ####
 harb = c(13.503044, 43.616199)
 harb_pp = st_point(x = harb)
@@ -15,7 +16,7 @@ geofence_poly = st_as_sf(geofence_poly_str, wkt = "geometry")
 st_crs(geofence_poly) = wgs
 
 # load data ####
-vessel_dat = read.csv(file.path(input_dir, "gps_data.csv")) %>%
+vessel_dat = read.csv(file.path(input_dir, "gps_data.csv"))[,-1] %>%
   mutate(deviceTime = as.POSIXct(deviceTime))
 
 # define period ###
@@ -35,7 +36,51 @@ write.csv(vessel_trips_table, file.path(out_dir, "vessel_trips_table.csv"), row.
 vessel_dat = fishing_trips_pp(vessel_dat, vessel_trips_table) %>%
   filter(trip != 0)
 
-# plot trip & sensor ####
+# assign in harbour position ####
+vessel_dat = pp_harb(vessel_dat, harb_buff)
+
+# estimate navigation speed
+navigation_speed = as.numeric(quantile(vessel_dat$speed, 0.75))
+
+##### Analysis #####
+# hours density ####
+day_hours_ref = data.frame(day_hours = 0:23)
+# hours density sensor off
+day_hours_raw = hours(vessel_dat$deviceTime[-which(vessel_dat$di2 == 0 | vessel_dat$in_harb == 1 | vessel_dat$speed >= navigation_speed)])
+day_hours_raw = data.frame(table(day_hours_raw)) %>%
+  dplyr:::rename("day_hours" = "day_hours_raw")  %>%
+  mutate(day_hours = as.numeric(as.character(day_hours))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours)%>%
+  mutate(sensor = "off")
+# hours density sensor on
+day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$di2 == 0  & vessel_dat$in_harb == 0 & vessel_dat$speed <= navigation_speed)])
+day_hours_sensor = data.frame(table(day_hours_sensor)) %>%
+  dplyr:::rename("day_hours" = "day_hours_sensor")  %>%
+  mutate(day_hours = as.numeric(as.character(day_hours))) %>%
+  right_join(day_hours_ref) %>%
+  mutate(Freq = ifelse(is.na(Freq), 0, Freq)) %>%
+  arrange(day_hours)%>%
+  mutate(sensor = "on")
+#combine
+day_hours_sensor_raw = rbind(day_hours_raw,
+                             day_hours_sensor) %>%
+  mutate(sensor = as.factor(sensor))
+# plot
+p1 = ggplot() +
+  geom_bar(data = day_hours_sensor_raw, aes(as.factor(day_hours), Freq, fill = sensor), stat = "identity") +
+  theme_bw() +
+  ylab("Minutes") + xlab("Time of the day") +
+  theme(legend.position = "bottom")
+p1
+ggsave(file.path(out_dir, "hours_density.pdf"), p1, device = cairo_pdf)
+knitr::plot_crop(file.path(out_dir, "hours_density.pdf"), quiet = TRUE)
+bitmap <- pdftools::pdf_render_page(file.path(out_dir, "hours_density.pdf"), dpi = 600)
+png::writePNG(bitmap, file.path(out_dir, "hours_density.png"))
+rm(bitmap); rm(p1); gc()
+
+# trip & sensor ####
 # define spatial extension e download the map 
 xrange = range(vessel_dat$longitude)
 yrange = range(vessel_dat$latitude)
@@ -60,10 +105,8 @@ p2 = ggmap(map) +
                filter(di2 == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
-  theme(legend.position = "bottom",
-        strip.text = element_text(size=7)) + 
-  facet_wrap(~date, ncol = 6) + xlab("") + ylab("") + 
-  # scale_color_manual(values = cols) +
+  theme(legend.position = "bottom") + 
+  facet_wrap(~trip) + xlab("") + ylab("") + 
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
 ggsave(file.path(out_dir, "trips_sensor.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
@@ -93,9 +136,23 @@ trips_table_stat = trips_table %>%
 write.csv(trips_table_stat, file.path(out_dir, "vessel_table_trips_stats.csv"), row.names = F)
 
 
+# spatial analysis
+sensor_dat = vessel_dat %>%
+  filter(di2 == 0 & in_harb != 1) %>%
+  mutate(day_period = ifelse(hours(deviceTime) <= 10, "morning", "evening"))
 
-
-
+p3 = ggmap(map) +
+  geom_point(data = sensor_dat, aes(longitude, latitude, colour = day_period))
+theme_bw() +
+  theme(legend.position = "bottom") +
+  xlab("") + ylab("") + 
+  ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
+p3
+ggsave(file.path(out_dir, "trips_sensor_hours.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
+knitr::plot_crop(file.path(out_dir, "trips_sensor_hours.pdf"), quiet = TRUE)
+bitmap <- pdftools::pdf_render_page(file.path(out_dir, "trips_sensor_hours.pdf"), dpi = 600)
+png::writePNG(bitmap, file.path(out_dir, "trips_sensor_hours.png"))
+rm(bitmap); rm(p3); gc()
 
 
 
