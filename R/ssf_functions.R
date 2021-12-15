@@ -108,7 +108,7 @@ pp_harb = function(vessel_data, location){
   return(vessel_data)
 }
 
-# define fishing trips timetable using the event (geofence) #####
+# define fishing trips timetable #####
 fishing_trips_table <- function(vessel_data){
   
   xdat = vessel_data %>%
