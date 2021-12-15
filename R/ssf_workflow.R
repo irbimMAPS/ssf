@@ -7,7 +7,7 @@
 #
 #Script Name: ssf_functions
 #
-#Script Description: The script below was developed to analysed the data used in: "Addressing gaps in small-scale fisheries: a low-cost tracking architecture"
+#Script Description: The script below was developed to analysed the data used in: "Addressing gaps in small-scale fisheries: a low-cost tracking system"
 #
 #
 #Notes:
