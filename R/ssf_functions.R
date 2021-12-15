@@ -15,27 +15,14 @@
 #
 
 # load libraries ####
-library(reticulate)
 library(lubridate)
-library(rjson)
 library(plyr)
 library(ggplot2)
 library(sf)
-library(chron)
 library(dplyr)
-library(NbClust)
 library(ggmap)
-library(caret)
-library(nnet)
-library(utiml)
-library(kohonen)
 library(reshape2)
-library(RMySQL)  
-library(stringr)
-library(RPostgreSQL)
-library(rpostgis)
 library(lwgeom)
-library(data.table)
 library(ggpubr)
 
 # setting options ####
@@ -48,14 +35,15 @@ options(scipen = 10000)
 Sys.setlocale("LC_TIME", "en_US")
 
 # check quality ####
-# define extra rate as a buffer of 15% of the input rate
-
+# rate_mins: set acquisition rate in munutes
+# gaps_mins: set maximum gap duration 30 minutes
+# 333m is the maximum distance allowed between 2 consecutive records
 check_data_raw <- function(vessel_data, rate_mins = 1, gaps_mins = 30){
   
   xpp = st_as_sf(vessel_data, coords = c("longitude", "latitude"))
   xrate = rate_mins/60
   xgaps = gaps_mins/60
-  # spikes
+  
   spikes = numeric(nrow(xpp))
   gaps = numeric(nrow(xpp))
   for(i in 2:nrow(xpp)){
