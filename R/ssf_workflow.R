@@ -1,3 +1,19 @@
+#HEADER ------------------------------------------------
+#
+#Author: Jacopo Pulcinella, Anna Nora Tassatti, Alessandro Galdelli, Adriano Mancini, Luca Bolognini
+#Email: jacopo.pulcinella@irbim.cnr.it
+#
+#Date: 2021-12-15
+#
+#Script Name: ssf_functions
+#
+#Script Description: The script below was developed to analysed the data used in: "Addressing gaps in small-scale fisheries: a low-cost tracking architecture"
+#
+#
+#Notes:
+#
+#
+
 source("R/ssf_functions.R")
 
 input_dir = "data"
@@ -148,26 +164,6 @@ write.csv(trips_table_stat, file.path(out_dir, "vessel_table_trips_stats.csv"), 
 
 # working days ####
 length(unique(c(as.Date(trips_table_stat$trip_start), as.Date(trips_table_stat$trip_end))))
-
-# spatial analysis
-sensor_dat = vessel_dat %>%
-  filter(sensor == 0 & in_harb != 1) %>%
-  mutate(day_period = ifelse(hours(deviceTime) <= 10, "morning", "evening"))
-
-p3 = ggmap(map) +
-  geom_point(data = sensor_dat, aes(longitude, latitude, colour = day_period))
-theme_bw() +
-  theme(legend.position = "bottom") +
-  xlab("") + ylab("") + 
-  ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
-p3
-ggsave(file.path(out_dir, "trips_sensor_hours.pdf"), p3, device = cairo_pdf, width = 10.5, height = 10)
-knitr::plot_crop(file.path(out_dir, "trips_sensor_hours.pdf"), quiet = TRUE)
-bitmap <- pdftools::pdf_render_page(file.path(out_dir, "trips_sensor_hours.pdf"), dpi = 600)
-png::writePNG(bitmap, file.path(out_dir, "trips_sensor_hours.png"))
-rm(bitmap); rm(p3); gc()
-
-
 
 
 

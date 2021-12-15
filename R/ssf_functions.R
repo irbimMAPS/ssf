@@ -1,3 +1,20 @@
+#HEADER ------------------------------------------------
+#
+#Author: Jacopo Pulcinella, Anna Nora Tassatti, Alessandro Galdelli, Adriano Mancini, Luca Bolognini
+#Email: jacopo.pulcinella@irbim.cnr.it
+#
+#Date: 2021-12-15
+#
+#Script Name: ssf_functions
+#
+#Script Description: The functions listed below were developed to analysed the data used in: "Addressing gaps in small-scale fisheries: a low-cost tracking architecture"
+#
+#
+#Notes:
+#
+#
+
+# load libraries ####
 library(reticulate)
 library(lubridate)
 library(rjson)
@@ -21,6 +38,7 @@ library(lwgeom)
 library(data.table)
 library(ggpubr)
 
+# setting options ####
 wgs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 
 "%ni%"=Negate('%in%')
@@ -29,17 +47,9 @@ sf::sf_use_s2(FALSE)
 options(scipen = 10000)
 Sys.setlocale("LC_TIME", "en_US")
 
-st_fun = function(x) (x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))
-
-# formatting string ####
-formatting_string <- function(x){
-  xx = iconv(x, "UTF-8", 'ASCII//TRANSLIT',sub='x')
-  xx = toupper(xx)
-  xx = gsub('[^[:alnum:]]',"", xx)
-  return(xx)
-}
-
 # check quality ####
+# define extra rate as a buffer of 15% of the input rate
+
 check_data_raw <- function(vessel_data, rate_mins = 1, gaps_mins = 30){
   
   xpp = st_as_sf(vessel_data, coords = c("longitude", "latitude"))
