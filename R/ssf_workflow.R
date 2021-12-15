@@ -47,7 +47,7 @@ navigation_speed = as.numeric(quantile(vessel_dat$speed, 0.75))
 # hours density ####
 day_hours_ref = data.frame(day_hours = 0:23)
 # hours density sensor off
-day_hours_raw = hours(vessel_dat$deviceTime[-which(vessel_dat$di2 == 0 | vessel_dat$in_harb == 1 | vessel_dat$speed >= navigation_speed)])
+day_hours_raw = hours(vessel_dat$deviceTime[-which(vessel_dat$sensor == 0 | vessel_dat$in_harb == 1 | vessel_dat$speed >= navigation_speed)])
 day_hours_raw = data.frame(table(day_hours_raw)) %>%
   dplyr:::rename("day_hours" = "day_hours_raw")  %>%
   mutate(day_hours = as.numeric(as.character(day_hours))) %>%
@@ -56,7 +56,7 @@ day_hours_raw = data.frame(table(day_hours_raw)) %>%
   arrange(day_hours)%>%
   mutate(sensor = "off")
 # hours density sensor on
-day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$di2 == 0  & vessel_dat$in_harb == 0 & vessel_dat$speed <= navigation_speed)])
+day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$sensor == 0  & vessel_dat$in_harb == 0 & vessel_dat$speed <= navigation_speed)])
 day_hours_sensor = data.frame(table(day_hours_sensor)) %>%
   dplyr:::rename("day_hours" = "day_hours_sensor")  %>%
   mutate(day_hours = as.numeric(as.character(day_hours))) %>%
@@ -78,7 +78,7 @@ p1
 p1.2 = ggplot() +
   geom_violin(data = vessel_dat %>% 
                  filter(vessel_dat$speed <= navigation_speed & in_harb == 0) %>%
-                mutate(di2 = ifelse(di2 == 1, "off", "on")), aes(x = as.factor(di2), y = speed, fill = as.factor(di2)), show.legend = F) +
+                mutate(sensor = ifelse(sensor == 1, "off", "on")), aes(x = as.factor(sensor), y = speed, fill = as.factor(sensor)), show.legend = F) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank()) + xlab("")
@@ -110,10 +110,10 @@ xdat = xdat %>%
 
 p2 = ggmap(map) +
   geom_point(data = xdat %>%
-               filter(di2 == 1), 
+               filter(sensor == 1), 
              aes(longitude, latitude), size = 0.1, show.legend = F) +
   geom_point(data = xdat %>%
-               filter(di2 == 0), 
+               filter(sensor == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
   theme(legend.position = "bottom") + 
@@ -134,7 +134,7 @@ track_stats = data.frame(xdat %>%
                            dplyr:::summarise(duration_hrs = round(as.numeric(difftime(max(deviceTime), min(deviceTime)), units = "hours"),2),
                                              speed_kmh_avg = round(mean(speed),2),
                                              distance_km = round((max(totalDistance) - min(totalDistance))/1000,2),
-                                             sensor_hrs = round(length(which(di2 == 0))/60, 2),
+                                             sensor_hrs = round(length(which(sensor == 0))/60, 2),
                                              event_entry = length(which(type == "geofenceEnter")),
                                              event_exit = length(which(type == "geofenceExit")))) %>%
   filter(trip != 0)
@@ -151,7 +151,7 @@ length(unique(c(as.Date(trips_table_stat$trip_start), as.Date(trips_table_stat$t
 
 # spatial analysis
 sensor_dat = vessel_dat %>%
-  filter(di2 == 0 & in_harb != 1) %>%
+  filter(sensor == 0 & in_harb != 1) %>%
   mutate(day_period = ifelse(hours(deviceTime) <= 10, "morning", "evening"))
 
 p3 = ggmap(map) +
@@ -161,7 +161,7 @@ theme_bw() +
   xlab("") + ylab("") + 
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p3
-ggsave(file.path(out_dir, "trips_sensor_hours.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
+ggsave(file.path(out_dir, "trips_sensor_hours.pdf"), p3, device = cairo_pdf, width = 10.5, height = 10)
 knitr::plot_crop(file.path(out_dir, "trips_sensor_hours.pdf"), quiet = TRUE)
 bitmap <- pdftools::pdf_render_page(file.path(out_dir, "trips_sensor_hours.pdf"), dpi = 600)
 png::writePNG(bitmap, file.path(out_dir, "trips_sensor_hours.png"))
