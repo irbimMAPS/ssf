@@ -85,7 +85,7 @@ p1.2 = ggplot() +
 
 p1combo = ggpubr:::ggarrange(plotlist = list(p1, p1.2), align = "hv", common.legend = T, legend = "bottom", labels = c("a", "b"))
 
-ggsave(file.path(out_dir, "hours_density.pdf"), p1combo, device = cairo_pdf)
+ggsave(file.path(out_dir, "hours_density.pdf"), p1combo, device = cairo_pdf, width = 10)
 knitr::plot_crop(file.path(out_dir, "hours_density.pdf"), quiet = TRUE)
 bitmap <- pdftools::pdf_render_page(file.path(out_dir, "hours_density.pdf"), dpi = 600)
 png::writePNG(bitmap, file.path(out_dir, "hours_density.png"))
