@@ -31,6 +31,8 @@ geofence_poly_str = data.frame(name = "Ancona",
 geofence_poly = st_as_sf(geofence_poly_str, wkt = "geometry")
 st_crs(geofence_poly) = wgs
 
+geofence_poly_proj = st_transform(geofence_poly, 3857)
+
 # load data ####
 vessel_dat = read.csv(file.path(input_dir, "gps_data.csv")) %>%
   mutate(deviceTime = as.POSIXct(deviceTime))
@@ -125,6 +127,7 @@ xdat = xdat %>%
   inner_join(xdat_trip)
 
 p2 = ggmap(map) +
+  geom_sf(data = geofence_poly,  inherit.aes = FALSE, fill = NA) +
   geom_point(data = xdat %>%
                filter(sensor == 1), 
              aes(longitude, latitude), size = 0.1, show.legend = F) +
