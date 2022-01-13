@@ -65,7 +65,7 @@ navigation_speed = as.numeric(quantile(vessel_dat$speed, 0.75))
 # hours density ####
 day_hours_ref = data.frame(day_hours = 0:23)
 # hours density sensor off
-day_hours_raw = hours(vessel_dat$deviceTime[-which(vessel_dat$sensor == 0 | vessel_dat$in_harb == 1 | vessel_dat$speed >= navigation_speed)])
+day_hours_raw = hour(vessel_dat$deviceTime[-which(vessel_dat$sensor == 0 | vessel_dat$in_harb == 1 | vessel_dat$speed >= navigation_speed)])
 day_hours_raw = data.frame(table(day_hours_raw)) %>%
   dplyr:::rename("day_hours" = "day_hours_raw")  %>%
   mutate(day_hours = as.numeric(as.character(day_hours))) %>%
@@ -74,7 +74,7 @@ day_hours_raw = data.frame(table(day_hours_raw)) %>%
   arrange(day_hours)%>%
   mutate(sensor = "off")
 # hours density sensor on
-day_hours_sensor = hours(vessel_dat$deviceTime[which(vessel_dat$sensor == 0  & vessel_dat$in_harb == 0 & vessel_dat$speed <= navigation_speed)])
+day_hours_sensor = hour(vessel_dat$deviceTime[which(vessel_dat$sensor == 0  & vessel_dat$in_harb == 0 & vessel_dat$speed <= navigation_speed)])
 day_hours_sensor = data.frame(table(day_hours_sensor)) %>%
   dplyr:::rename("day_hours" = "day_hours_sensor")  %>%
   mutate(day_hours = as.numeric(as.character(day_hours))) %>%
@@ -102,7 +102,7 @@ p1.2 = ggplot() +
         panel.background = element_blank()) + xlab("")
 
 p1combo = ggpubr:::ggarrange(plotlist = list(p1, p1.2), align = "hv", common.legend = T, legend = "bottom", labels = c("a", "b"))
-
+p1combo
 ggsave(file.path(out_dir, "hours_density.pdf"), p1combo, device = cairo_pdf, width = 10)
 knitr::plot_crop(file.path(out_dir, "hours_density.pdf"), quiet = TRUE)
 bitmap <- pdftools::pdf_render_page(file.path(out_dir, "hours_density.pdf"), dpi = 600)
@@ -135,11 +135,12 @@ p2 = ggmap(map) +
                filter(sensor == 0), 
              aes(longitude, latitude), size = 0.5, colour = "red", shape = 19, show.legend = F) +
   theme_bw() +
-  theme(legend.position = "bottom") + 
+  theme(legend.position = "bottom",
+        strip.text = element_text(size=10)) + 
   facet_wrap(~trip) + xlab("") + ylab("") + 
   ggtitle(paste("From", as.Date(from), "to", as.Date(to)))
 p2
-ggsave(file.path(out_dir, "trips_sensor.pdf"), p2, device = cairo_pdf, width = 10.5, height = 10)
+ggsave(file.path(out_dir, "trips_sensor.pdf"), p2, device = cairo_pdf, width = 12, height = 10)
 knitr::plot_crop(file.path(out_dir, "trips_sensor.pdf"), quiet = TRUE)
 bitmap <- pdftools::pdf_render_page(file.path(out_dir, "trips_sensor.pdf"), dpi = 600)
 png::writePNG(bitmap, file.path(out_dir, "trips_sensor.png"))
